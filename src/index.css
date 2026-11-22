@@ -1,0 +1,63 @@
+@import "tailwindcss";
+@import "katex/dist/katex.min.css";
+
+@layer base {
+  body {
+    font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    background-color: #f4f7fb;
+    color: #0f172a;
+  }
+
+  .font-mono,
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .font-mono {
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+}
+
+/* Official Pusmendik polygonal blue header backdrop & institutional presets */
+.tka-header-bg {
+  background:
+    linear-gradient(125deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 42%),
+    linear-gradient(235deg, rgba(15, 23, 42, 0.22) 0%, rgba(15, 23, 42, 0) 50%),
+    linear-gradient(110deg, #1d4ed8 0%, #2563eb 52%, #1e40af 100%);
+}
+
+.tka-header-navy {
+  background:
+    linear-gradient(125deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 42%),
+    linear-gradient(110deg, #0f172a 0%, #1e3a8a 55%, #172554 100%);
+}
+
+.tka-header-emerald {
+  background:
+    linear-gradient(125deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 42%),
+    linear-gradient(110deg, #065f46 0%, #047857 52%, #064e3b 100%);
+}
+
+.tka-header-maroon {
+  background:
+    linear-gradient(125deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 42%),
+    linear-gradient(110deg, #7f1d1d 0%, #991b1b 52%, #6b1515 100%);
+}
+
+.tka-header-slate {
+  background:
+    linear-gradient(125deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 42%),
+    linear-gradient(110deg, #1e293b 0%, #334155 52%, #0f172a 100%);
+}
+
+/* Prevent accidental text copying on protected exam canvas */
+.exam-protected-surface {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.exam-protected-surface input,
+.exam-protected-surface textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}

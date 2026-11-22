@@ -1,0 +1,6 @@
+{
+  "name": "Simulasi TKA & Bank Soal Nasional",
+  "description": "Aplikasi Ujian TKA / ANBK interaktif berbasis web dengan Bank Soal 5 tipe resmi, penjadwalan Multi-Sekolah Sesi 1-3, dan pengamanan anti-curang token ulang.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
