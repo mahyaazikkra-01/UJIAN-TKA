@@ -379,7 +379,7 @@ export default function App() {
               className="inline-flex items-center gap-1.5 rounded-md border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/20 whitespace-nowrap shrink-0"
             >
               <ShieldCheck className="h-3.5 w-3.5" />
-              Portal Pengawas & Bank Soal
+              Portal Pengawas
             </button>
           </div>
         </div>
@@ -387,9 +387,9 @@ export default function App() {
         <main className="my-8 flex items-center justify-center">
           <div className="w-full max-w-md rounded-xl border border-white/20 bg-white p-6 shadow-2xl sm:p-7">
             <div className="flex flex-col items-center text-center">
-              {branding.logoUrl ? (
+              {(branding.logoUrl || '/assets/aistudio/tutwuri1_e2a6801e.jpg') ? (
                 <img
-                  src={branding.logoUrl}
+                  src={branding.logoUrl || '/assets/aistudio/tutwuri1_e2a6801e.jpg'}
                   alt={branding.portalTitle}
                   className="h-14 w-14 rounded-full border border-slate-200 bg-white object-contain p-1 shadow-sm"
                   referrerPolicy="no-referrer"
@@ -523,11 +523,11 @@ export default function App() {
       <header className={`${themeMeta.headerClass} px-4 py-3 text-white shadow-sm sm:px-6`}>
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            {branding.logoUrl ? (
+            {(branding.logoUrl || '/assets/aistudio/tutwuri1_e2a6801e.jpg') ? (
               <img
-                src={branding.logoUrl}
-                alt="Logo"
-                className="h-9 w-9 shrink-0 rounded-full border border-white/30 bg-white/95 object-contain p-0.5"
+                src={branding.logoUrl || '/assets/aistudio/tutwuri1_e2a6801e.jpg'}
+                alt="Logo Tut Wuri Handayani"
+                className="h-9 w-9 shrink-0 rounded-full border border-white/30 bg-white object-contain p-0.5 shadow-xs"
                 referrerPolicy="no-referrer"
               />
             ) : (

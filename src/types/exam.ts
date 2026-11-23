@@ -275,7 +275,7 @@ export const DEFAULT_PORTAL_BRANDING: PortalBranding = {
   topBannerText: 'SISTEM SIMULASI TKA · MULTI-SEKOLAH',
   headerOrgLabel: 'PUSMENDIK',
   headerAppTitle: 'APLIKASI TKA / SIMULASI UJIAN',
-  logoUrl: '',
+  logoUrl: '/assets/aistudio/tutwuri1_e2a6801e.jpg',
   logoBadgeText: 'TKA',
   portalTitle: 'Simulasi TKA',
   portalSubtitle: 'Pilih jenjang dan mata pelajaran untuk memulai simulasi',
@@ -291,4 +291,35 @@ export const DEFAULT_PORTAL_BRANDING: PortalBranding = {
   showDemoAccounts: true,
   themePreset: 'pusmendik_blue',
 };
+
+export interface PdfReportConfig {
+  govHeader: string;
+  dinasHeader: string;
+  schoolName: string;
+  schoolAddress: string;
+  logoUrl: string;
+  signLocation: string;
+  signDate: string;
+  headmasterName: string;
+  headmasterNip: string;
+  proctorName: string;
+  proctorNip: string;
+  proctorTitle: string;
+}
+
+export const DEFAULT_PDF_REPORT_CONFIG: PdfReportConfig = {
+  govHeader: 'PEMERINTAH KABUPATEN PASURUAN',
+  dinasHeader: 'DINAS PENDIDIKAN',
+  schoolName: 'SMP NEGERI 1 BEJI',
+  schoolAddress: 'Jl. Wicaksana No. 22A Gununggangsir Beji, Kab Pasuruan',
+  logoUrl: '/assets/aistudio/tutwuri1_e2a6801e.jpg',
+  signLocation: 'Beji',
+  signDate: '24 November 2026',
+  headmasterName: 'Yayuk Sudarwati, S.Pd., M.Pd.',
+  headmasterNip: '197002071997032005',
+  proctorName: 'Adi Candra Wirawan, S.Kom.',
+  proctorNip: '198211212024211006',
+  proctorTitle: 'Proktor',
+};
+
 

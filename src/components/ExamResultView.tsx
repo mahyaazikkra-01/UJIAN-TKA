@@ -53,11 +53,11 @@ export const ExamResultView: React.FC<ExamResultViewProps> = ({
       <header className={`${headerThemeClass} px-4 py-3 text-white shadow-sm sm:px-6`}>
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            {branding.logoUrl ? (
+            {(branding.logoUrl || '/assets/aistudio/tutwuri1_e2a6801e.jpg') ? (
               <img
-                src={branding.logoUrl}
-                alt="Logo"
-                className="h-9 w-9 shrink-0 rounded-full border border-white/30 bg-white/95 object-contain p-0.5"
+                src={branding.logoUrl || '/assets/aistudio/tutwuri1_e2a6801e.jpg'}
+                alt="Logo Tut Wuri Handayani"
+                className="h-9 w-9 shrink-0 rounded-full border border-white/30 bg-white object-contain p-0.5 shadow-xs"
                 referrerPolicy="no-referrer"
               />
             ) : (

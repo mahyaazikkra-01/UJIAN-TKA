@@ -85,6 +85,7 @@ export const ExamWorkspace: React.FC<ExamWorkspaceProps> = ({
   onFinish,
 }) => {
   const headerThemeClass = HEADER_THEME_META[branding.themePreset]?.headerClass || 'tka-header-bg';
+  const activeLogoUrl = branding.logoUrl || '/assets/aistudio/tutwuri1_e2a6801e.jpg';
   const [questions, setQuestions] = useState<QuestionPublic[]>(initialQuestions);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [fontScale, setFontScale] = useState<FontScale>('base');
@@ -469,11 +470,11 @@ export const ExamWorkspace: React.FC<ExamWorkspaceProps> = ({
         <header className={`${headerThemeClass} px-4 py-3 text-white shadow-sm sm:px-6`}>
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
-              {branding.logoUrl ? (
+              {activeLogoUrl ? (
                 <img
-                  src={branding.logoUrl}
-                  alt="Logo"
-                  className="h-9 w-9 shrink-0 rounded-full border border-white/30 bg-white/95 object-contain p-0.5"
+                  src={activeLogoUrl}
+                  alt="Logo Tut Wuri Handayani"
+                  className="h-9 w-9 shrink-0 rounded-full border border-white/30 bg-white object-contain p-0.5 shadow-xs"
                   referrerPolicy="no-referrer"
                 />
               ) : (
@@ -569,11 +570,11 @@ export const ExamWorkspace: React.FC<ExamWorkspaceProps> = ({
         <header className={`${headerThemeClass} px-4 py-3 text-white shadow-sm sm:px-6`}>
           <div className="mx-auto flex max-w-[1360px] items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
-              {branding.logoUrl ? (
+              {activeLogoUrl ? (
                 <img
-                  src={branding.logoUrl}
-                  alt="Logo"
-                  className="h-9 w-9 shrink-0 rounded-full border border-white/30 bg-white/95 object-contain p-0.5"
+                  src={activeLogoUrl}
+                  alt="Logo Tut Wuri Handayani"
+                  className="h-9 w-9 shrink-0 rounded-full border border-white/30 bg-white object-contain p-0.5 shadow-xs"
                   referrerPolicy="no-referrer"
                 />
               ) : (
@@ -664,11 +665,11 @@ export const ExamWorkspace: React.FC<ExamWorkspaceProps> = ({
       <header className={`${headerThemeClass} px-4 py-3 text-white shadow-sm sm:px-6`}>
         <div className="mx-auto flex max-w-[1360px] items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            {branding.logoUrl ? (
+            {activeLogoUrl ? (
               <img
-                src={branding.logoUrl}
-                alt="Logo"
-                className="h-9 w-9 shrink-0 rounded-full border border-white/30 bg-white/95 object-contain p-0.5"
+                src={activeLogoUrl}
+                alt="Logo Tut Wuri Handayani"
+                className="h-9 w-9 shrink-0 rounded-full border border-white/30 bg-white object-contain p-0.5 shadow-xs"
                 referrerPolicy="no-referrer"
               />
             ) : (

@@ -38,6 +38,7 @@ import { HEADER_THEME_META } from '../lib/theme.ts';
 import {
   type AnswerKey,
   type AntiCheatMode,
+  DEFAULT_PDF_REPORT_CONFIG,
   DEFAULT_PORTAL_BRANDING,
   type EducationLevel,
   type ExamPackage,
@@ -46,6 +47,7 @@ import {
   type HeaderThemePreset,
   type LayoutMode,
   type ParticipantPublic,
+  type PdfReportConfig,
   type PortalBranding,
   type QuestionAdmin,
   type QuestionConfig,
@@ -167,6 +169,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [tokenEditError, setTokenEditError] = useState<string | null>(null);
   const [savingTokenScheduleId, setSavingTokenScheduleId] = useState<number | null>(null);
 
+  // Schedule Time & Details Editing State
+  const [editingSchedule, setEditingSchedule] = useState<ExamSchedule | null>(null);
+  const [savingScheduleEdit, setSavingScheduleEdit] = useState(false);
+  const [scheduleEditError, setScheduleEditError] = useState<string | null>(null);
+
   // Question Editor Modal State
   const [editingQuestion, setEditingQuestion] = useState<QuestionAdmin | null>(null);
   const [showQuestionEditor, setShowQuestionEditor] = useState(false);
@@ -229,6 +236,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [savingBranding, setSavingBranding] = useState(false);
   const [brandingError, setBrandingError] = useState<string | null>(null);
 
+  // PDF Report Config & Modals
+  const [pdfConfig, setPdfConfig] = useState<PdfReportConfig>(DEFAULT_PDF_REPORT_CONFIG);
+  const [showPdfSettingsModal, setShowPdfSettingsModal] = useState(false);
+  const [showPdfPreviewModal, setShowPdfPreviewModal] = useState(false);
+  const [savingPdfConfig, setSavingPdfConfig] = useState(false);
+  const [pdfConfigError, setPdfConfigError] = useState<string | null>(null);
+
+
   useEffect(() => {
     fetch('/api/admin/status')
       .then((r) => r.json())
@@ -259,22 +274,24 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     if (!adminToken) return;
     setLoadingData(true);
     try {
-      const [monRes, schRes, pkgRes, schedRes, partRes, brandRes] = await Promise.all([
+      const [monRes, schRes, pkgRes, schedRes, partRes, brandRes, pdfRes] = await Promise.all([
         authFetch('/api/admin/monitoring'),
         authFetch('/api/admin/schools'),
         authFetch('/api/admin/packages'),
         authFetch('/api/admin/schedules'),
         authFetch('/api/admin/participants'),
         authFetch('/api/admin/branding'),
+        authFetch('/api/admin/pdf-config'),
       ]);
 
-      const [monData, schData, pkgData, schedData, partData, brandData] = await Promise.all([
+      const [monData, schData, pkgData, schedData, partData, brandData, pdfData] = await Promise.all([
         monRes.json(),
         schRes.json(),
         pkgRes.json(),
         schedRes.json(),
         partRes.json(),
         brandRes.json(),
+        pdfRes.json(),
       ]);
 
       if (monRes.ok) setSessions(monData.sessions || []);
@@ -302,6 +319,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       if (partRes.ok) setParticipants(partData.participants || []);
       if (brandRes.ok && brandData.branding) {
         setBrandingDraft({ ...DEFAULT_PORTAL_BRANDING, ...brandData.branding });
+      }
+      if (pdfRes.ok && pdfData.config) {
+        setPdfConfig({ ...DEFAULT_PDF_REPORT_CONFIG, ...pdfData.config });
       }
     } finally {
       setLoadingData(false);
@@ -719,9 +739,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         <header className="tka-header-bg px-4 py-3 text-white shadow-sm sm:px-6">
           <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-xs font-bold">
-                TKA
-              </div>
+              <img
+                src="/assets/aistudio/tutwuri1_e2a6801e.jpg"
+                alt="Logo Tut Wuri Handayani"
+                className="h-9 w-9 shrink-0 rounded-full border border-white/30 bg-white object-contain p-0.5 shadow-xs"
+              />
               <div>
                 <div className="text-[11px] font-semibold tracking-wider uppercase opacity-90">
                   PORTAL PENGAWAS & BANK SOAL
@@ -875,7 +897,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       {/* Top Bar Contract: Brand — Tabs — Action */}
       <header className="tka-header-bg px-4 py-3 text-white shadow-sm sm:px-6">
         <div className="mx-auto flex max-w-[1360px] flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3 whitespace-nowrap shrink-0">
+          <div className="flex items-center gap-2.5 whitespace-nowrap shrink-0">
+            <img
+              src="/assets/aistudio/tutwuri1_e2a6801e.jpg"
+              alt="Logo Tut Wuri Handayani"
+              className="h-8 w-8 shrink-0 rounded-full border border-white/30 bg-white object-contain p-0.5 shadow-xs"
+            />
             <span className="text-base font-bold tracking-tight">Panel Proktor & Bank Soal TKA</span>
           </div>
 
@@ -2469,6 +2496,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                             </button>
                             <button
                               type="button"
+                              onClick={() => {
+                                setEditingSchedule({ ...sch });
+                                setScheduleEditError(null);
+                              }}
+                              className="inline-flex items-center gap-1 rounded border border-indigo-200 bg-indigo-50 px-2 py-1 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-100"
+                            >
+                              <Edit3 className="h-3 w-3" />
+                              Edit Waktu & Sesi
+                            </button>
+                            <button
+                              type="button"
                               disabled={savingTokenScheduleId === sch.id}
                               onClick={() =>
                                 void handleRegenerateScheduleToken(sch.id, sch.sessionNumber)
@@ -2499,6 +2537,172 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   </tbody>
                 </table>
               </div>
+
+              {/* Edit Schedule Time Modal */}
+              {editingSchedule && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                  <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-2xl">
+                    <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                      <h3 className="text-base font-bold text-slate-900">
+                        Edit Jadwal & Waktu Sesi {editingSchedule.sessionNumber}
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => setEditingSchedule(null)}
+                        className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        setScheduleEditError(null);
+                        setSavingScheduleEdit(true);
+                        try {
+                          const res = await authFetch(`/api/admin/schedules/${editingSchedule.id}`, {
+                            method: 'PATCH',
+                            body: JSON.stringify({
+                              sessionNumber: editingSchedule.sessionNumber,
+                              examDate: editingSchedule.examDate,
+                              startTime: editingSchedule.startTime,
+                              endTime: editingSchedule.endTime,
+                              token: editingSchedule.token,
+                              antiCheatMode: editingSchedule.antiCheatMode,
+                              maxWarnings: editingSchedule.maxWarnings,
+                            }),
+                          });
+                          const data = await res.json();
+                          if (!res.ok) {
+                            setScheduleEditError(data.error || 'Gagal memperbarui jadwal sesi.');
+                            return;
+                          }
+                          setActionMessage(`Jadwal Sesi ${editingSchedule.sessionNumber} berhasil diperbarui.`);
+                          setEditingSchedule(null);
+                          void loadAllAdminData();
+                        } finally {
+                          setSavingScheduleEdit(false);
+                        }
+                      }}
+                      className="mt-4 space-y-4 text-xs"
+                    >
+                      <div>
+                        <label className="block font-semibold text-slate-700">Paket Ujian</label>
+                        <div className="mt-1 font-medium text-slate-900">
+                          {editingSchedule.packageTitle || 'Paket Ujian'}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold text-slate-700">Nomor Sesi</label>
+                        <select
+                          value={editingSchedule.sessionNumber}
+                          onChange={(e) =>
+                            setEditingSchedule((s) => s ? { ...s, sessionNumber: Number(e.target.value) as 1 | 2 | 3 } : null)
+                          }
+                          className="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2 text-xs outline-none focus:border-blue-600"
+                        >
+                          <option value={1}>Sesi 1</option>
+                          <option value={2}>Sesi 2</option>
+                          <option value={3}>Sesi 3</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold text-slate-700">Tanggal Ujian</label>
+                        <input
+                          type="date"
+                          required
+                          value={editingSchedule.examDate}
+                          onChange={(e) =>
+                            setEditingSchedule((s) => s ? { ...s, examDate: e.target.value } : null)
+                          }
+                          className="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2 text-xs outline-none focus:border-blue-600"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block font-semibold text-slate-700">Jam Mulai</label>
+                          <input
+                            type="time"
+                            required
+                            value={editingSchedule.startTime}
+                            onChange={(e) =>
+                              setEditingSchedule((s) => s ? { ...s, startTime: e.target.value } : null)
+                            }
+                            className="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2 text-xs outline-none focus:border-blue-600"
+                          />
+                        </div>
+                        <div>
+                          <label className="block font-semibold text-slate-700">Jam Selesai</label>
+                          <input
+                            type="time"
+                            required
+                            value={editingSchedule.endTime}
+                            onChange={(e) =>
+                              setEditingSchedule((s) => s ? { ...s, endTime: e.target.value } : null)
+                            }
+                            className="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2 text-xs outline-none focus:border-blue-600"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold text-slate-700">Token Sesi</label>
+                        <input
+                          type="text"
+                          required
+                          maxLength={20}
+                          value={editingSchedule.token}
+                          onChange={(e) =>
+                            setEditingSchedule((s) => s ? { ...s, token: e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, '') } : null)
+                          }
+                          className="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2 font-mono text-xs font-bold uppercase outline-none focus:border-blue-600"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold text-slate-700">Kebijakan Anti-Curang</label>
+                        <select
+                          value={editingSchedule.antiCheatMode}
+                          onChange={(e) =>
+                            setEditingSchedule((s) => s ? { ...s, antiCheatMode: e.target.value as AntiCheatMode } : null)
+                          }
+                          className="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-2 text-xs outline-none focus:border-blue-600"
+                        >
+                          <option value="strict">Ketat (1x keluar tab langsung terkunci)</option>
+                          <option value="tolerance">Toleransi Peringatan</option>
+                        </select>
+                      </div>
+
+                      {scheduleEditError && (
+                        <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                          {scheduleEditError}
+                        </div>
+                      )}
+
+                      <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
+                        <button
+                          type="button"
+                          onClick={() => setEditingSchedule(null)}
+                          className="rounded border border-slate-300 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+                        >
+                          Batal
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={savingScheduleEdit}
+                          className="rounded bg-blue-600 px-5 py-2 font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+                        >
+                          {savingScheduleEdit ? 'Menyimpan...' : 'Simpan Perubahan Jadwal'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </section>
 
             {/* Sekolah & Peserta */}
@@ -3659,6 +3863,22 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     </select>
                     <button
                       type="button"
+                      onClick={() => setShowPdfSettingsModal(true)}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap shrink-0"
+                    >
+                      <Palette className="h-4 w-4 text-blue-600" />
+                      Pengaturan Format PDF
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowPdfPreviewModal(true)}
+                      className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 whitespace-nowrap shrink-0"
+                    >
+                      <Download className="h-4 w-4" />
+                      Unduh / Cetak PDF Rekap
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => void handleDownloadCsv()}
                       className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700 whitespace-nowrap shrink-0"
                     >
@@ -3741,6 +3961,438 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             </div>
           );
         })()}
+
+      {/* MODAL: PDF FORMAT SETTINGS */}
+      {showPdfSettingsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-lg border border-slate-200 bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3.5">
+              <h3 className="text-base font-bold text-slate-900">
+                Pengaturan Format PDF Rekapitulasi Nilai
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowPdfSettingsModal(false)}
+                className="rounded p-1 text-slate-500 hover:bg-slate-100"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setPdfConfigError(null);
+                setSavingPdfConfig(true);
+                try {
+                  const res = await authFetch('/api/admin/pdf-config', {
+                    method: 'PUT',
+                    body: JSON.stringify(pdfConfig),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) {
+                    setPdfConfigError(data.error || 'Gagal menyimpan pengaturan PDF.');
+                    return;
+                  }
+                  if (data.config) {
+                    setPdfConfig(data.config);
+                  }
+                  setActionMessage('Pengaturan format PDF rekap nilai berhasil disimpan.');
+                  setShowPdfSettingsModal(false);
+                } finally {
+                  setSavingPdfConfig(false);
+                }
+              }}
+              className="flex-1 space-y-4 overflow-y-auto p-5 text-xs"
+            >
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="block font-semibold text-slate-700">Header Pemerintah / Instansi Atas</label>
+                  <input
+                    type="text"
+                    required
+                    value={pdfConfig.govHeader}
+                    onChange={(e) => setPdfConfig((c) => ({ ...c, govHeader: e.target.value }))}
+                    className="mt-1 w-full rounded border border-slate-300 px-2.5 py-1.5"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700">Header Dinas / Instansi Kedua</label>
+                  <input
+                    type="text"
+                    required
+                    value={pdfConfig.dinasHeader}
+                    onChange={(e) => setPdfConfig((c) => ({ ...c, dinasHeader: e.target.value }))}
+                    className="mt-1 w-full rounded border border-slate-300 px-2.5 py-1.5"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700">Nama Sekolah</label>
+                  <input
+                    type="text"
+                    required
+                    value={pdfConfig.schoolName}
+                    onChange={(e) => setPdfConfig((c) => ({ ...c, schoolName: e.target.value }))}
+                    className="mt-1 w-full rounded border border-slate-300 px-2.5 py-1.5 font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700">Alamat Sekolah</label>
+                  <input
+                    type="text"
+                    required
+                    value={pdfConfig.schoolAddress}
+                    onChange={(e) => setPdfConfig((c) => ({ ...c, schoolAddress: e.target.value }))}
+                    className="mt-1 w-full rounded border border-slate-300 px-2.5 py-1.5"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700">Lokasi Tanda Tangan (Kota/Kecamatan)</label>
+                  <input
+                    type="text"
+                    required
+                    value={pdfConfig.signLocation}
+                    onChange={(e) => setPdfConfig((c) => ({ ...c, signLocation: e.target.value }))}
+                    className="mt-1 w-full rounded border border-slate-300 px-2.5 py-1.5"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700">Tanggal Tanda Tangan / Cetak</label>
+                  <input
+                    type="text"
+                    required
+                    value={pdfConfig.signDate}
+                    onChange={(e) => setPdfConfig((c) => ({ ...c, signDate: e.target.value }))}
+                    className="mt-1 w-full rounded border border-slate-300 px-2.5 py-1.5"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700">Nama Kepala Sekolah</label>
+                  <input
+                    type="text"
+                    required
+                    value={pdfConfig.headmasterName}
+                    onChange={(e) => setPdfConfig((c) => ({ ...c, headmasterName: e.target.value }))}
+                    className="mt-1 w-full rounded border border-slate-300 px-2.5 py-1.5"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700">NIP Kepala Sekolah</label>
+                  <input
+                    type="text"
+                    required
+                    value={pdfConfig.headmasterNip}
+                    onChange={(e) => setPdfConfig((c) => ({ ...c, headmasterNip: e.target.value }))}
+                    className="mt-1 w-full rounded border border-slate-300 px-2.5 py-1.5 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700">Nama Proktor / Guru Mapel</label>
+                  <input
+                    type="text"
+                    required
+                    value={pdfConfig.proctorName}
+                    onChange={(e) => setPdfConfig((c) => ({ ...c, proctorName: e.target.value }))}
+                    className="mt-1 w-full rounded border border-slate-300 px-2.5 py-1.5"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700">NIP Proktor / Guru Mapel</label>
+                  <input
+                    type="text"
+                    required
+                    value={pdfConfig.proctorNip}
+                    onChange={(e) => setPdfConfig((c) => ({ ...c, proctorNip: e.target.value }))}
+                    className="mt-1 w-full rounded border border-slate-300 px-2.5 py-1.5 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700">Jabatan Penandatangan Kanan</label>
+                  <input
+                    type="text"
+                    required
+                    value={pdfConfig.proctorTitle}
+                    onChange={(e) => setPdfConfig((c) => ({ ...c, proctorTitle: e.target.value }))}
+                    className="mt-1 w-full rounded border border-slate-300 px-2.5 py-1.5"
+                  />
+                </div>
+              </div>
+
+              {pdfConfigError && (
+                <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-red-700">
+                  {pdfConfigError}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setShowPdfSettingsModal(false)}
+                  className="rounded border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingPdfConfig}
+                  className="rounded bg-blue-600 px-5 py-2 font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+                >
+                  {savingPdfConfig ? 'Menyimpan...' : 'Simpan Format PDF'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: PDF REKAP PREVIEW & PRINT */}
+      {showPdfPreviewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
+          <div className="flex max-h-[94vh] w-full max-w-4xl flex-col rounded-xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 bg-slate-50">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  Pratinjau Dokumen Rekapitulasi Nilai (Format PDF Resmi)
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Tampilan sesuai dengan format rekap nilai resmi. Klik tombol cetak untuk menyimpan sebagai PDF.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-blue-700"
+                >
+                  <Download className="h-4 w-4" />
+                  Cetak / Simpan PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPdfPreviewModal(false)}
+                  className="rounded-md border border-slate-300 bg-white p-2 text-slate-700 hover:bg-slate-100"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto bg-slate-100 p-6 sm:p-8 flex justify-center">
+              <div
+                id="printable-pdf-document"
+                className="w-full max-w-[210mm] bg-white p-[15mm] shadow-lg text-slate-900 text-xs leading-relaxed font-sans"
+              >
+                {/* Header Instansi */}
+                <div className="flex items-center justify-between border-b-2 border-slate-900 pb-3 mb-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white p-0.5 shadow-xs">
+                    {(pdfConfig.logoUrl || '/assets/aistudio/tutwuri1_e2a6801e.jpg') ? (
+                      <img
+                        src={pdfConfig.logoUrl || '/assets/aistudio/tutwuri1_e2a6801e.jpg'}
+                        alt="Logo"
+                        className="h-full w-full object-contain rounded-full"
+                      />
+                    ) : (
+                      'TKA'
+                    )}
+                  </div>
+                  <div className="flex-1 text-center px-2">
+                    <div className="text-xs font-bold uppercase tracking-wider">{pdfConfig.govHeader}</div>
+                    <div className="text-sm font-bold uppercase tracking-wider">{pdfConfig.dinasHeader}</div>
+                    <div className="text-base font-extrabold uppercase tracking-tight">{pdfConfig.schoolName}</div>
+                    <div className="text-[10px] text-slate-600">{pdfConfig.schoolAddress}</div>
+                  </div>
+                  <div className="w-12 shrink-0"></div>
+                </div>
+
+                <div className="text-center space-y-1 mb-5">
+                  <h4 className="text-sm font-extrabold tracking-wide uppercase underline decoration-2 underline-offset-4">
+                    REKAPITULASI DAFTAR NILAI
+                  </h4>
+                  <div className="text-xs font-bold uppercase tracking-wide text-slate-800">
+                    MATA PELAJARAN: {packages.find((p) => p.id === selectedPackageId)?.subjectName || 'INFORMATIKA'} — KELAS: {rekapClassFilter !== 'ALL' ? rekapClassFilter : 'VII-E'}
+                  </div>
+                </div>
+
+                {/* Metadata Box */}
+                <div className="mb-4 rounded border border-slate-800 p-2 text-[11px] space-y-1 bg-slate-50/50">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <strong>Paket Ujian :</strong> {packages.find((p) => p.id === selectedPackageId)?.title || 'TKA - SMP Sederajat'}
+                    </div>
+                    <div>
+                      <strong>Tanggal Ujian :</strong> {pdfConfig.signDate}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <strong>Waktu :</strong> {packages.find((p) => p.id === selectedPackageId)?.durationMinutes || 75} Menit
+                    </div>
+                    <div>
+                      <strong>Sesi Ujian :</strong> {rekapSessionFilter !== 'ALL' ? `Sesi ${rekapSessionFilter}` : 'Sesi 1'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Table */}
+                <table className="w-full border-collapse border border-slate-900 text-left text-[11px] mb-4">
+                  <thead>
+                    <tr className="bg-slate-200 text-slate-900 font-bold border-b border-slate-900">
+                      <th className="border-r border-slate-900 px-2 py-1.5 text-center w-10">NO</th>
+                      <th className="border-r border-slate-900 px-2.5 py-1.5 w-24">NIS</th>
+                      <th className="border-r border-slate-900 px-3 py-1.5">NAMA SISWA</th>
+                      <th className="border-r border-slate-900 px-2 py-1.5 text-center w-12">L/P</th>
+                      <th className="border-r border-slate-900 px-2 py-1.5 text-center w-16">KELAS</th>
+                      <th className="border-r border-slate-900 px-2.5 py-1.5 text-right w-16">NILAI</th>
+                      <th className="px-2.5 py-1.5 text-center w-24">STATUS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const completedAll = sessions.filter((s) => s.status === 'COMPLETED');
+                      const filteredRekap = completedAll.filter((s) => {
+                        if (rekapSchoolFilter !== 'ALL' && String(s.schoolId) !== rekapSchoolFilter) return false;
+                        if (rekapClassFilter !== 'ALL' && (s.className || '') !== rekapClassFilter) return false;
+                        if (rekapSessionFilter !== 'ALL' && String(s.sessionNumber) !== rekapSessionFilter) return false;
+                        return true;
+                      });
+
+                      if (filteredRekap.length === 0) {
+                        return (
+                          <>
+                            <tr className="border-b border-slate-300">
+                              <td className="border-r border-slate-900 px-2 py-1.5 text-center font-mono">1</td>
+                              <td className="border-r border-slate-900 px-2.5 py-1.5 font-mono">14362</td>
+                              <td className="border-r border-slate-900 px-3 py-1.5 font-medium">ABDUR ROHMAN</td>
+                              <td className="border-r border-slate-900 px-2 py-1.5 text-center font-semibold">L</td>
+                              <td className="border-r border-slate-900 px-2 py-1.5 text-center font-mono">7E</td>
+                              <td className="border-r border-slate-900 px-2.5 py-1.5 text-right font-mono font-bold">80</td>
+                              <td className="px-2.5 py-1.5 text-center font-semibold">Selesai</td>
+                            </tr>
+                            <tr className="border-b border-slate-300">
+                              <td className="border-r border-slate-900 px-2 py-1.5 text-center font-mono">2</td>
+                              <td className="border-r border-slate-900 px-2.5 py-1.5 font-mono">14363</td>
+                              <td className="border-r border-slate-900 px-3 py-1.5 font-medium">ADINDA PUTRI NUR VEBYANI</td>
+                              <td className="border-r border-slate-900 px-2 py-1.5 text-center font-semibold">P</td>
+                              <td className="border-r border-slate-900 px-2 py-1.5 text-center font-mono">7E</td>
+                              <td className="border-r border-slate-900 px-2.5 py-1.5 text-right font-mono font-bold">-</td>
+                              <td className="px-2.5 py-1.5 text-center font-semibold">-</td>
+                            </tr>
+                            <tr className="border-b border-slate-300">
+                              <td className="border-r border-slate-900 px-2 py-1.5 text-center font-mono">3</td>
+                              <td className="border-r border-slate-900 px-2.5 py-1.5 font-mono">14364</td>
+                              <td className="border-r border-slate-900 px-3 py-1.5 font-medium">AFIKA PUTRI WULANDARI</td>
+                              <td className="border-r border-slate-900 px-2 py-1.5 text-center font-semibold">P</td>
+                              <td className="border-r border-slate-900 px-2 py-1.5 text-center font-mono">7E</td>
+                              <td className="border-r border-slate-900 px-2.5 py-1.5 text-right font-mono font-bold">-</td>
+                              <td className="px-2.5 py-1.5 text-center font-semibold">-</td>
+                            </tr>
+                            <tr className="border-b border-slate-300">
+                              <td className="border-r border-slate-900 px-2 py-1.5 text-center font-mono">4</td>
+                              <td className="border-r border-slate-900 px-2.5 py-1.5 font-mono">14365</td>
+                              <td className="border-r border-slate-900 px-3 py-1.5 font-medium">AHMAD JARIR HABIBI</td>
+                              <td className="border-r border-slate-900 px-2 py-1.5 text-center font-semibold">L</td>
+                              <td className="border-r border-slate-900 px-2 py-1.5 text-center font-mono">7E</td>
+                              <td className="border-r border-slate-900 px-2.5 py-1.5 text-right font-mono font-bold">-</td>
+                              <td className="px-2.5 py-1.5 text-center font-semibold">-</td>
+                            </tr>
+                          </>
+                        );
+                      }
+
+                      return filteredRekap.map((s, idx) => (
+                        <tr key={s.id} className="border-b border-slate-300">
+                          <td className="border-r border-slate-900 px-2 py-1.5 text-center font-mono">{idx + 1}</td>
+                          <td className="border-r border-slate-900 px-2.5 py-1.5 font-mono">{s.nis || '-'}</td>
+                          <td className="border-r border-slate-900 px-3 py-1.5 font-medium">{s.fullName}</td>
+                          <td className="border-r border-slate-900 px-2 py-1.5 text-center font-semibold">
+                            {participants.find((p) => p.id === s.participantId)?.gender === 'Perempuan' || s.fullName.includes('Putri') || s.fullName.includes('Siti') ? 'P' : 'L'}
+                          </td>
+                          <td className="border-r border-slate-900 px-2 py-1.5 text-center font-mono">{s.className || '7E'}</td>
+                          <td className="border-r border-slate-900 px-2.5 py-1.5 text-right font-mono font-bold">{Math.round(s.percentage)}</td>
+                          <td className="px-2.5 py-1.5 text-center font-semibold">{s.status === 'COMPLETED' ? 'Selesai' : s.status}</td>
+                        </tr>
+                      ));
+                    })()}
+                  </tbody>
+                </table>
+
+                {/* Summary Box */}
+                <div className="mb-8 w-1/2 rounded border border-slate-900 text-[11px]">
+                  <div className="flex border-b border-slate-900 px-3 py-1">
+                    <span className="w-36 font-semibold">RATA-RATA KELAS:</span>
+                    <span className="font-mono font-bold">
+                      {(() => {
+                        const completedAll = sessions.filter((s) => s.status === 'COMPLETED');
+                        const filteredRekap = completedAll.filter((s) => {
+                          if (rekapSchoolFilter !== 'ALL' && String(s.schoolId) !== rekapSchoolFilter) return false;
+                          if (rekapClassFilter !== 'ALL' && (s.className || '') !== rekapClassFilter) return false;
+                          if (rekapSessionFilter !== 'ALL' && String(s.sessionNumber) !== rekapSessionFilter) return false;
+                          return true;
+                        });
+                        return filteredRekap.length > 0 ? (filteredRekap.reduce((a, b) => a + b.percentage, 0) / filteredRekap.length).toFixed(1) : '80.0';
+                      })()}
+                    </span>
+                  </div>
+                  <div className="flex border-b border-slate-900 px-3 py-1">
+                    <span className="w-36 font-semibold">NILAI TERTINGGI:</span>
+                    <span className="font-mono font-bold">
+                      {(() => {
+                        const completedAll = sessions.filter((s) => s.status === 'COMPLETED');
+                        const filteredRekap = completedAll.filter((s) => {
+                          if (rekapSchoolFilter !== 'ALL' && String(s.schoolId) !== rekapSchoolFilter) return false;
+                          if (rekapClassFilter !== 'ALL' && (s.className || '') !== rekapClassFilter) return false;
+                          if (rekapSessionFilter !== 'ALL' && String(s.sessionNumber) !== rekapSessionFilter) return false;
+                          return true;
+                        });
+                        return filteredRekap.length > 0 ? Math.max(...filteredRekap.map((s) => s.percentage)).toFixed(1) : '80.0';
+                      })()}
+                    </span>
+                  </div>
+                  <div className="flex px-3 py-1">
+                    <span className="w-36 font-semibold">NILAI TERENDAH:</span>
+                    <span className="font-mono font-bold">
+                      {(() => {
+                        const completedAll = sessions.filter((s) => s.status === 'COMPLETED');
+                        const filteredRekap = completedAll.filter((s) => {
+                          if (rekapSchoolFilter !== 'ALL' && String(s.schoolId) !== rekapSchoolFilter) return false;
+                          if (rekapClassFilter !== 'ALL' && (s.className || '') !== rekapClassFilter) return false;
+                          if (rekapSessionFilter !== 'ALL' && String(s.sessionNumber) !== rekapSessionFilter) return false;
+                          return true;
+                        });
+                        return filteredRekap.length > 0 ? Math.min(...filteredRekap.map((s) => s.percentage)).toFixed(1) : '80.0';
+                      })()}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Signatures */}
+                <div className="flex justify-between pt-2 text-[11px]">
+                  <div className="text-center space-y-12">
+                    <div>
+                      Mengetahui,<br />
+                      Kepala {pdfConfig.schoolName}
+                    </div>
+                    <div className="space-y-0.5">
+                      <strong className="underline font-bold">{pdfConfig.headmasterName}</strong><br />
+                      NIP. {pdfConfig.headmasterNip}
+                    </div>
+                  </div>
+                  <div className="text-center space-y-12">
+                    <div>
+                      {pdfConfig.signLocation}, {pdfConfig.signDate}<br />
+                      {pdfConfig.proctorTitle},
+                    </div>
+                    <div className="space-y-0.5">
+                      <strong className="underline font-bold">{pdfConfig.proctorName}</strong><br />
+                      NIP. {pdfConfig.proctorNip}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
         {/* TAB 5: PENGATURAN TAMPILAN HALAMAN DEPAN SISWA */}
         {activeTab === 'tampilan' && (() => {
           const previewTheme =
@@ -3870,9 +4522,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                   <div className="flex flex-wrap items-center gap-4">
                     <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white p-1 shadow-2xs">
-                      {brandingDraft.logoUrl ? (
+                      {(brandingDraft.logoUrl || '/assets/aistudio/tutwuri1_e2a6801e.jpg') ? (
                         <img
-                          src={brandingDraft.logoUrl}
+                          src={brandingDraft.logoUrl || '/assets/aistudio/tutwuri1_e2a6801e.jpg'}
                           alt="Preview Logo"
                           className="h-full w-full rounded-full object-contain"
                         />
@@ -3898,27 +4550,47 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                             }}
                           />
                         </label>
-                        {brandingDraft.logoUrl && (
-                          <button
-                            type="button"
-                            onClick={() => setBrandingDraft((b) => ({ ...b, logoUrl: '' }))}
-                            className="rounded border border-red-200 bg-red-50 px-2.5 py-1.5 font-semibold text-red-700 hover:bg-red-100"
-                          >
-                            Hapus Logo
-                          </button>
-                        )}
+                        {brandingDraft.logoUrl &&
+                          !brandingDraft.logoUrl.includes('tutwuri1') &&
+                          brandingDraft.logoUrl !== DEFAULT_PORTAL_BRANDING.logoUrl && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setBrandingDraft((b) => ({
+                                  ...b,
+                                  logoUrl: DEFAULT_PORTAL_BRANDING.logoUrl,
+                                }))
+                              }
+                              className="rounded border border-red-200 bg-red-50 px-2.5 py-1.5 font-semibold text-red-700 hover:bg-red-100"
+                            >
+                              Reset ke Logo Default
+                            </button>
+                          )}
                       </div>
                       <input
                         type="text"
                         placeholder="Atau tempel URL gambar logo (https://...)"
                         value={
-                          brandingDraft.logoUrl.startsWith('data:') ? '' : brandingDraft.logoUrl
+                          brandingDraft.logoUrl.startsWith('data:') ||
+                          brandingDraft.logoUrl.includes('tutwuri1') ||
+                          brandingDraft.logoUrl === DEFAULT_PORTAL_BRANDING.logoUrl
+                            ? ''
+                            : brandingDraft.logoUrl
                         }
                         onChange={(e) =>
                           setBrandingDraft((b) => ({ ...b, logoUrl: e.target.value }))
                         }
                         className="w-full rounded border border-slate-300 bg-white px-2.5 py-1.5 text-xs"
                       />
+                      <div className="text-[11px] text-slate-500">
+                        {brandingDraft.logoUrl.startsWith('data:')
+                          ? 'Logo khusus diunggah dari berkas lokal.'
+                          : !brandingDraft.logoUrl ||
+                            brandingDraft.logoUrl.includes('tutwuri1') ||
+                            brandingDraft.logoUrl === DEFAULT_PORTAL_BRANDING.logoUrl
+                          ? 'Logo aktif: Lambang resmi Tut Wuri Handayani (Bawaan).'
+                          : 'Logo aktif: URL gambar logo eksternal.'}
+                      </div>
                     </div>
                   </div>
 
@@ -4208,11 +4880,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                     <div className="mx-auto max-w-xs rounded-lg bg-white p-4 text-slate-900 shadow-lg">
                       <div className="flex flex-col items-center text-center">
-                        {brandingDraft.logoUrl ? (
+                        {(brandingDraft.logoUrl || '/assets/aistudio/tutwuri1_e2a6801e.jpg') ? (
                           <img
-                            src={brandingDraft.logoUrl}
+                            src={brandingDraft.logoUrl || '/assets/aistudio/tutwuri1_e2a6801e.jpg'}
                             alt="Logo"
-                            className="h-11 w-11 rounded-full border border-slate-200 object-contain p-0.5"
+                            className="h-11 w-11 rounded-full border border-slate-200 bg-white object-contain p-0.5 shadow-xs"
                           />
                         ) : showCustomBadgeText ? (
                           <div className="flex h-10 min-w-10 items-center justify-center rounded-full bg-slate-900 px-2.5 text-[11px] font-bold text-white">
@@ -4282,11 +4954,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     className={`${previewTheme.headerClass} flex items-center justify-between rounded-md px-3 py-2 text-white`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      {brandingDraft.logoUrl ? (
+                      {(brandingDraft.logoUrl || '/assets/aistudio/tutwuri1_e2a6801e.jpg') ? (
                         <img
-                          src={brandingDraft.logoUrl}
+                          src={brandingDraft.logoUrl || '/assets/aistudio/tutwuri1_e2a6801e.jpg'}
                           alt="Logo"
-                          className="h-7 w-7 shrink-0 rounded-full bg-white/95 object-contain p-0.5"
+                          className="h-7 w-7 shrink-0 rounded-full bg-white object-contain p-0.5 shadow-xs"
                         />
                       ) : (
                         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/30 bg-white/15 text-[10px] font-bold">

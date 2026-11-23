@@ -10,11 +10,13 @@ import {
   db,
   getAdminQuestionsByPackage,
   getCachedPublicQuestions,
+  getPdfReportConfig,
   getPortalBranding,
   invalidatePackageCache,
   listPackages,
   listSchedules,
   listSchools,
+  savePdfReportConfig,
   savePortalBranding,
   seedDatabaseIfEmpty,
 } from './src/db/localDb.ts';
@@ -29,12 +31,14 @@ import {
 import { gradeQuestionAnswer } from './src/lib/scoring.ts';
 import {
   type AnswerKey,
+  DEFAULT_PDF_REPORT_CONFIG,
   DEFAULT_PORTAL_BRANDING,
   type ExamResultDetail,
   type HeaderThemePreset,
+  type PdfReportConfig,
   type PortalBranding,
   type QuestionConfig,
-  QuestionType,
+  type QuestionType,
   type ScoringMode,
   type SessionStatus,
   type StudentAnswerPayload,
@@ -271,6 +275,27 @@ app.get('/api/branding', (_req, res) => {
     res.status(500).json({ error: 'Gagal memuat pengaturan tampilan.' });
   }
 });
+
+app.get('/api/admin/pdf-config', requireAdminAuth, (_req, res) => {
+  try {
+    res.json({ config: getPdfReportConfig() });
+  } catch (err) {
+    console.error('Get PDF config error:', err);
+    res.status(500).json({ error: 'Gagal memuat pengaturan PDF.' });
+  }
+});
+
+app.put('/api/admin/pdf-config', requireAdminAuth, (req, res) => {
+  try {
+    const body = req.body || {};
+    const updated = savePdfReportConfig(body);
+    res.json({ ok: true, config: updated });
+  } catch (err) {
+    console.error('Save PDF config error:', err);
+    res.status(500).json({ error: 'Gagal menyimpan pengaturan PDF.' });
+  }
+});
+
 
 // ==========================================
 // PARTICIPANT AUTH & 4-STEP TKA EXAM WORKFLOW
@@ -1273,8 +1298,18 @@ app.post('/api/admin/schedules', requireAdminAuth, (req, res) => {
 app.patch('/api/admin/schedules/:id', requireAdminAuth, (req, res) => {
   try {
     const id = Number(req.params.id);
-    const { token, regenerateToken, showTokenToStudent, antiCheatMode, isActive, maxWarnings } =
-      req.body || {};
+    const {
+      token,
+      regenerateToken,
+      showTokenToStudent,
+      antiCheatMode,
+      isActive,
+      maxWarnings,
+      examDate,
+      startTime,
+      endTime,
+      sessionNumber,
+    } = req.body || {};
     const existing = db.prepare('SELECT * FROM exam_schedules WHERE id = ?').get(id);
     if (!existing) return res.status(404).json({ error: 'Jadwal tidak ditemukan.' });
 
@@ -1294,6 +1329,10 @@ app.patch('/api/admin/schedules/:id', requireAdminAuth, (req, res) => {
     db.prepare(
       `UPDATE exam_schedules
        SET token = ?,
+           exam_date = COALESCE(?, exam_date),
+           start_time = COALESCE(?, start_time),
+           end_time = COALESCE(?, end_time),
+           session_number = COALESCE(?, session_number),
            show_token_to_student = COALESCE(?, show_token_to_student),
            anti_cheat_mode = COALESCE(?, anti_cheat_mode),
            max_warnings = COALESCE(?, max_warnings),
@@ -1301,6 +1340,10 @@ app.patch('/api/admin/schedules/:id', requireAdminAuth, (req, res) => {
        WHERE id = ?`,
     ).run(
       newToken,
+      examDate ? String(examDate) : null,
+      startTime ? String(startTime) : null,
+      endTime ? String(endTime) : null,
+      [1, 2, 3].includes(Number(sessionNumber)) ? Number(sessionNumber) : null,
       typeof showTokenToStudent === 'boolean' ? (showTokenToStudent ? 1 : 0) : null,
       antiCheatMode ? String(antiCheatMode) : null,
       typeof maxWarnings === 'number' ? maxWarnings : null,
@@ -1308,7 +1351,7 @@ app.patch('/api/admin/schedules/:id', requireAdminAuth, (req, res) => {
       id,
     );
 
-    res.json({ token: newToken });
+    res.json({ token: newToken, ok: true });
   } catch (err) {
     console.error('Update schedule error:', err);
     res.status(500).json({ error: 'Gagal memperbarui jadwal sesi.' });
@@ -2028,7 +2071,7 @@ app.put('/api/admin/branding', requireAdminAuth, (req, res) => {
       topBannerText: cleanText(body.topBannerText, DEFAULT_PORTAL_BRANDING.topBannerText, 120),
       headerOrgLabel: cleanText(body.headerOrgLabel, DEFAULT_PORTAL_BRANDING.headerOrgLabel, 80),
       headerAppTitle: cleanText(body.headerAppTitle, DEFAULT_PORTAL_BRANDING.headerAppTitle, 100),
-      logoUrl: logoCheck.value,
+      logoUrl: logoCheck.value || DEFAULT_PORTAL_BRANDING.logoUrl,
       logoBadgeText: cleanText(body.logoBadgeText, DEFAULT_PORTAL_BRANDING.logoBadgeText, 12),
       portalTitle: cleanText(body.portalTitle, DEFAULT_PORTAL_BRANDING.portalTitle, 80),
       portalSubtitle: cleanText(body.portalSubtitle, DEFAULT_PORTAL_BRANDING.portalSubtitle, 180),

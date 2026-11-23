@@ -5,11 +5,13 @@ import { hashPassword } from '../lib/auth.ts';
 import {
   type AnswerKey,
   type AntiCheatMode,
+  DEFAULT_PDF_REPORT_CONFIG,
   DEFAULT_PORTAL_BRANDING,
   type EducationLevel,
   type ExamPackage,
   type ExamSchedule,
   type LayoutMode,
+  type PdfReportConfig,
   type PortalBranding,
   type QuestionAdmin,
   type QuestionConfig,
@@ -951,6 +953,7 @@ export function getPortalBranding(): PortalBranding {
     return {
       ...DEFAULT_PORTAL_BRANDING,
       ...parsed,
+      logoUrl: parsed.logoUrl || DEFAULT_PORTAL_BRANDING.logoUrl,
     };
   } catch {
     return { ...DEFAULT_PORTAL_BRANDING };
@@ -967,4 +970,30 @@ export function savePortalBranding(next: PortalBranding): PortalBranding {
   ).run(JSON.stringify(merged));
   return merged;
 }
+
+export function getPdfReportConfig(): PdfReportConfig {
+  const row = db
+    .prepare("SELECT value FROM app_settings WHERE key = 'pdf_report_config'")
+    .get();
+  if (!row) return { ...DEFAULT_PDF_REPORT_CONFIG };
+  try {
+    const parsed = JSON.parse(String(row.value)) as Partial<PdfReportConfig>;
+    return {
+      ...DEFAULT_PDF_REPORT_CONFIG,
+      ...parsed,
+      logoUrl: parsed.logoUrl || DEFAULT_PDF_REPORT_CONFIG.logoUrl,
+    };
+  } catch {
+    return { ...DEFAULT_PDF_REPORT_CONFIG };
+  }
+}
+
+export function savePdfReportConfig(next: PdfReportConfig): PdfReportConfig {
+  const merged = { ...DEFAULT_PDF_REPORT_CONFIG, ...next };
+  db.prepare(
+    "INSERT OR REPLACE INTO app_settings (key, value) VALUES ('pdf_report_config', ?)",
+  ).run(JSON.stringify(merged));
+  return merged;
+}
+
 
